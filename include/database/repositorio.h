@@ -8,6 +8,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <stdexcept> // Para std::runtime_error
 
 class Repositorio {
     std::vector<Local> locais;
@@ -24,12 +25,13 @@ public:
         return nextLocalId++;
     }
 
-    int addLocal(Local l) { 
-        l.setId(gerarProximoIdLocal()); 
-        locais.push_back(l); 
-        return l.getId();
+    int addLocal(const Local& l) {
+        Local novoLocal = l;
+        novoLocal.setId(gerarProximoIdLocal());
+        locais.push_back(novoLocal);
+        return novoLocal.getId();
     }
-    
+
     Local* getLocal(int id) {
         for (auto& local : locais) {
             if (local.getId() == id) {
@@ -39,16 +41,15 @@ public:
         return nullptr;
     }
 
-    void updateLocal(Local elemento) {
+    void updateLocal(const Local& elemento) {
         for (auto& local : locais) {
             if (local.getId() == elemento.getId()) {
                 local = elemento;
                 return;
             }
         }
-        throw std::runtime_error("Local não encontrado");
+        throw std::runtime_error("Local não encontrado para atualização");
     }
-
 
     void removeLocal(int id)  {
         for (auto it = locais.begin(); it != locais.end(); ++it) {
@@ -57,10 +58,10 @@ public:
                 return;
             }
         }
-        throw std::runtime_error("Local não encontrado");
+        throw std::runtime_error("Local não encontrado para remoção");
     }
 
-    std::vector<Local> getAllLocal() {
+    std::vector<Local>& getAllLocal() {
         return locais;
     }
 
@@ -69,32 +70,30 @@ public:
         return nextVeiculoId++;
     }
 
-    int addVeiculo(Veiculo v) { 
-        v.setId(gerarProximoIdVeiculo()); 
-        v.setPlaca(v.getPlaca()); // Valida a placa
-        veiculos.push_back(v); 
-        return v.getId();
-        }
-    
-    Veiculo* getVeiculo(const char* placa) { 
+    int addVeiculo(const Veiculo& v) {
+        Veiculo novoVeiculo = v;
+        novoVeiculo.setId(gerarProximoIdVeiculo());
+        veiculos.push_back(novoVeiculo);
+        return novoVeiculo.getId();
+    }
+
+    Veiculo* getVeiculo(const char* placa) {
         for (auto& veiculo : veiculos) {
-            if (veiculo.getPlaca() == placa) {
+            if (strcmp(veiculo.getPlaca(), placa) == 0) {
                 return &veiculo;
             }
         }
         return nullptr;
      }
 
-    void updateVeiculo(Veiculo elemento) {
+    void updateVeiculo(const Veiculo& elemento) {
         for (auto& veiculo : veiculos) {
             if (strcmp(veiculo.getPlaca(), elemento.getPlaca()) == 0) {
                 veiculo = elemento;
                 return;
             }
-        
         }
-        throw std::runtime_error("Veículo não encontrado");
-
+        throw std::runtime_error("Veículo não encontrado para atualização");
     }
 
     void removeVeiculo(const char* placa) {
@@ -104,25 +103,26 @@ public:
                 return;
             }
         }
-        throw std::runtime_error("Veículo não encontrado");
+        throw std::runtime_error("Veículo não encontrado para remoção");
     }
 
-    std::vector<Veiculo> getAllVeiculo() {
+    std::vector<Veiculo>& getAllVeiculo() {
         return veiculos;
     }
 
     // Pedidos
-        int gerarProximoIdPedido() {
+    int gerarProximoIdPedido() {
         return nextPedidoId++;
     }
 
-    int addPedido(Pedido p) { 
-        p.setId(gerarProximoIdPedido()); 
-        pedidos.push_back(p);
-        return p.getId();
+    int addPedido(const Pedido& p) {
+        Pedido novoPedido = p;
+        novoPedido.setId(gerarProximoIdPedido());
+        pedidos.push_back(novoPedido);
+        return novoPedido.getId();
     }
-    
-    Pedido* getPedido(int id) { 
+
+    Pedido* getPedido(int id) {
         for (auto& pedido : pedidos) {
             if (pedido.getId() == id) {
                 return &pedido;
@@ -131,14 +131,14 @@ public:
         return nullptr;
     }
 
-    void updatePedido(Pedido elemento) {
+    void updatePedido(const Pedido& elemento) {
         for (auto& pedido : pedidos) {
             if (pedido.getId() == elemento.getId()) {
                 pedido = elemento;
                 return;
             }
         }
-        throw std::runtime_error("Pedido não encontrado");
+        throw std::runtime_error("Pedido não encontrado para atualização");
     }
 
     void removePedido(int id) {
@@ -148,136 +148,86 @@ public:
                 return;
             }
         }
-        throw std::runtime_error("Pedido não encontrado");
+        throw std::runtime_error("Pedido não encontrado para remoção");
     }
 
-    std::vector<Pedido> getAllPedido() {
+    std::vector<Pedido>& getAllPedido() {
         return pedidos;
     }
-    
+
     /**
-     * @brief Salva os dados do repositório em um arquivo binário.
-     * 
-     * @param DB_PATH Caminho do arquivo onde os dados serão salvos.
-     * @details Esta função salva todos os dados do repositório, incluindo locais, veículos e pedidos,
-     *          em um arquivo binário especificado pelo caminho DB_PATH. O formato do arquivo
-     *          é estruturado para facilitar a leitura e escrita dos dados, garantindo que os IDs
-     *          sejam mantidos corretamente entre as execuções do programa.
-     * @throws std::runtime_error Se houver um erro ao abrir o arquivo para escrita.
+     * @brief Salva os dados do repositório em um arquivo binário de forma segura.
      */
     void salvarBinario(const char* DB_PATH) {
-        std::ofstream outFile(DB_PATH, std::ios::binary); // Abre o arquivo em modo binário
+        std::ofstream outFile(DB_PATH, std::ios::binary);
         if (!outFile) {
             throw std::runtime_error("Erro ao abrir o arquivo para escrita");
         }
 
-        // Salva locais
-        // Obtém o número de locais
-        size_t localCount = locais.size(); 
+        // Salva os contadores de ID para garantir a sequência correta
+        outFile.write(reinterpret_cast<const char*>(&nextLocalId), sizeof(nextLocalId));
+        outFile.write(reinterpret_cast<const char*>(&nextVeiculoId), sizeof(nextVeiculoId));
+        outFile.write(reinterpret_cast<const char*>(&nextPedidoId), sizeof(nextPedidoId));
         
-        // Escreve o número de locais
-        outFile.write(reinterpret_cast<const char*>(&localCount), sizeof(localCount)); 
-        
-        // Itera sobre cada local e escreve seus dados no arquivo
-        for (const auto& local : locais) {
-            outFile.write(reinterpret_cast<const char*>(&local), sizeof(Local)); // Escreve o local no arquivo
-        }
+        // Salva locais: primeiro o tamanho, depois os dados
+        size_t localCount = locais.size();
+        outFile.write(reinterpret_cast<const char*>(&localCount), sizeof(localCount));
+        outFile.write(reinterpret_cast<const char*>(locais.data()), localCount * sizeof(Local));
 
-        // Salva veículos
-        // Obtém o número de veículos
-        size_t veiculoCount = veiculos.size(); 
-        // Escreve o número de veículos no arquivo
+        // Salva veículos: primeiro o tamanho, depois os dados
+        size_t veiculoCount = veiculos.size();
         outFile.write(reinterpret_cast<const char*>(&veiculoCount), sizeof(veiculoCount));
+        outFile.write(reinterpret_cast<const char*>(veiculos.data()), veiculoCount * sizeof(Veiculo));
 
-        // Itera sobre cada veículo e escreve seus dados no arquivo
-        for (const auto& veiculo : veiculos) {
-            outFile.write(reinterpret_cast<const char*>(&veiculo), sizeof(Veiculo)); // Escreve o veículo no arquivo
-        }
-
-        // Salva pedidos
-        // Obtém o número de pedidos
+        // Salva pedidos: primeiro o tamanho, depois os dados
         size_t pedidoCount = pedidos.size();
-
-        // Escreve o número de pedidos no arquivo
         outFile.write(reinterpret_cast<const char*>(&pedidoCount), sizeof(pedidoCount));
+        outFile.write(reinterpret_cast<const char*>(pedidos.data()), pedidoCount * sizeof(Pedido));
 
-        // Itera sobre cada pedido e escreve seus dados no arquivo
-        for (const auto& pedido : pedidos) {
-            outFile.write(reinterpret_cast<const char*>(&pedido), sizeof(Pedido)); // Escreve o pedido no arquivo
-        }
-
-        outFile.close(); // Fecha o arquivo após a escrita
+        outFile.close();
     }
 
     /**
-     * @brief Carrega os dados do repositório a partir de um arquivo binário.
-     * 
-     * @param DB_PATH Caminho do arquivo de onde os dados serão carregados.
-     * @details Esta função lê os dados do repositório a partir de um arquivo binário especificado pelo caminho DB_PATH.
-     *          Ela restaura os locais, veículos e pedidos, garantindo que os IDs sejam mantidos corretamente entre as execuções do programa.
-     * @throws std::runtime_error Se houver um erro ao abrir o arquivo para leitura.
+     * @brief Carrega os dados do repositório a partir de um arquivo binário de forma segura.
      */
     void carregarBinario(const char* DB_PATH) {
-        std::ifstream inFile(DB_PATH, std::ios::binary); // Abre o arquivo em modo binário
+        std::ifstream inFile(DB_PATH, std::ios::binary);
+        // Se o arquivo não existe (primeira execução), não faz nada.
         if (!inFile) {
-            throw std::runtime_error("Erro ao abrir o arquivo para leitura");
+            return;
         }
 
-        // Carrega locais
-        size_t localCount; // Lê o número de locais
-        inFile.read(reinterpret_cast<char*>(&localCount), sizeof(localCount)); // Lê o número de locais do arquivo
-        locais.resize(localCount); // Redimensiona o vetor de locais para o número lido
-
-        // Itera sobre cada local e lê seus dados do arquivo
-        for (auto& local : locais) {
-            inFile.read(reinterpret_cast<char*>(&local), sizeof(Local)); // Lê o local do arquivo
+        // Carrega os contadores de ID para continuar a sequência
+        inFile.read(reinterpret_cast<char*>(&nextLocalId), sizeof(nextLocalId));
+        inFile.read(reinterpret_cast<char*>(&nextVeiculoId), sizeof(nextVeiculoId));
+        inFile.read(reinterpret_cast<char*>(&nextPedidoId), sizeof(nextPedidoId));
+        
+        // Se o arquivo estiver vazio ou corrompido, reseta os contadores
+        if(inFile.eof()) {
+            nextLocalId = nextVeiculoId = nextPedidoId = 0;
+            inFile.close();
+            return;
         }
 
-        // Atualiza o próximo ID de local
-        // Se houver locais, o próximo ID será o ID do último local + 1
-        if (!locais.empty()) {
-        nextLocalId = locais.back().getId() + 1; 
-        } else {
-        nextLocalId = 0; // Se não houver locais, inicia o próximo ID como 0
-        }
+        // Carrega locais: primeiro o tamanho, depois os dados
+        size_t localCount;
+        inFile.read(reinterpret_cast<char*>(&localCount), sizeof(localCount));
+        locais.resize(localCount);
+        inFile.read(reinterpret_cast<char*>(locais.data()), localCount * sizeof(Local));
 
-        // Carrega veículos
-        size_t veiculoCount; // Lê o número de veículos
-        inFile.read(reinterpret_cast<char*>(&veiculoCount), sizeof(veiculoCount)); // Lê o número de veículos do arquivo
-        veiculos.resize(veiculoCount); // Redimensiona o vetor de veículos para o número lido
+        // Carrega veículos: primeiro o tamanho, depois os dados
+        size_t veiculoCount;
+        inFile.read(reinterpret_cast<char*>(&veiculoCount), sizeof(veiculoCount));
+        veiculos.resize(veiculoCount);
+        inFile.read(reinterpret_cast<char*>(veiculos.data()), veiculoCount * sizeof(Veiculo));
 
-        // Itera sobre cada veículo e lê seus dados do arquivo
-        for (auto& veiculo : veiculos) {
-            inFile.read(reinterpret_cast<char*>(&veiculo), sizeof(Veiculo)); // Lê o veículo do arquivo
-        }
+        // Carrega pedidos: primeiro o tamanho, depois os dados
+        size_t pedidoCount;
+        inFile.read(reinterpret_cast<char*>(&pedidoCount), sizeof(pedidoCount));
+        pedidos.resize(pedidoCount);
+        inFile.read(reinterpret_cast<char*>(pedidos.data()), pedidoCount * sizeof(Pedido));
 
-        // Atualiza o próximo ID de veículo
-        // Se houver veículos, o próximo ID será o ID do último veículo + 1
-        if (!veiculos.empty()) {
-            nextVeiculoId = veiculos.back().getId() + 1;
-        } else {
-        nextVeiculoId = 0; // Se não houver veículos, inicia o próximo ID como 0
-        }
-
-        // Carrega pedidos
-        size_t pedidoCount;// Lê o número de pedidos
-        inFile.read(reinterpret_cast<char*>(&pedidoCount), sizeof(pedidoCount)); // Lê o número de pedidos do arquivo
-        pedidos.resize(pedidoCount);// Redimensiona o vetor de pedidos para o número lido
-
-        // Itera sobre cada pedido e lê seus dados do arquivo
-        for (auto& pedido : pedidos) {
-            inFile.read(reinterpret_cast<char*>(&pedido), sizeof(Pedido));// Lê o pedido do arquivo
-        }
-
-        // Atualiza o próximo ID de pedido
-        // Se houver pedidos, o próximo ID será o ID do último pedido + 1
-        if (!pedidos.empty()) {
-            nextPedidoId = pedidos.back().getId() + 1;
-        } else {
-        nextPedidoId = 0; // Se não houver pedidos, inicia o próximo ID como 0
-        }
-
-        inFile.close(); // Fecha o arquivo após a leitura
+        inFile.close();
     }
 };
 
