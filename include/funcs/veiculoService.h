@@ -51,7 +51,7 @@ class VeiculoService {
             }
         }
 
-        std::vector<Veiculo> listarVeiculos() {
+        std::vector<Veiculo>& listarVeiculos() {
             return repositorio->getAllVeiculo();
         }
 };
