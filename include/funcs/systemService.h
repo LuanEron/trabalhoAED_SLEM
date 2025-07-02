@@ -138,5 +138,34 @@ void realizarEntrega(Repositorio& repo, Pedido& pedido) {
     finalizarPedido(repo, pedido, const_cast<Veiculo&>(veiculoSelecionado));
     std::cout << "Pedido entregue com sucesso!" << std::endl;
 }
+/**
+ * @brief Exibe na tela os contadores e estatísticas gerais do sistema.
+ * @param repo Referência para o repositório de dados.
+ * @details Calcula e mostra o número total de locais, veículos, e pedidos (separados por status).
+ * A contagem é feita em tempo real, garantindo que os dados estejam sempre atualizados.
+ * Complexidade: O(P), onde P é o número de pedidos (para contar os status).
+ */
+void exibirEstatisticas(Repositorio& repo) {
+    PedidoService pedidoService(&repo);
+    int pedidosPendentes = 0;
+    int pedidosEntregues = 0;
 
+    // Contagem de pedidos por status
+    for (const auto& pedido : pedidoService.listarPedidos()) {
+        if (pedido.getStatus()) {
+            pedidosEntregues++;
+        } else {
+            pedidosPendentes++;
+        }
+    }
+
+    std::cout << "\n--- Estatísticas do Sistema (Contadores) ---\n" << std::endl;
+    std::cout << "Total de Locais cadastrados: " << repo.getAllLocal().size() << std::endl;
+    std::cout << "Total de Veículos cadastrados: " << repo.getAllVeiculo().size() << std::endl;
+    std::cout << "---------------------------------------------" << std::endl;
+    std::cout << "Total de Pedidos: " << repo.getAllPedido().size() << std::endl;
+    std::cout << "  - Pedidos Pendentes: " << pedidosPendentes << std::endl;
+    std::cout << "  - Pedidos Entregues: " << pedidosEntregues << std::endl;
+    std::cout << "---------------------------------------------" << std::endl;
+}
 #endif // SYSTEMSERVICE_H
