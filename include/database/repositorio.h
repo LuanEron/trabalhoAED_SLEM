@@ -208,7 +208,6 @@ public:
             inFile.close();
             return;
         }
-
         // Carrega locais: primeiro o tamanho, depois os dados
         size_t localCount;
         inFile.read(reinterpret_cast<char*>(&localCount), sizeof(localCount));
