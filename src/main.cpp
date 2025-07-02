@@ -31,12 +31,13 @@ int main() {
     std::cout << "1. Locais" << std::endl;
     std::cout << "2. Veículos" << std::endl;
     std::cout << "3. Pedidos" << std::endl;
-    std::cout << "4. Gerenciar Entregas" << std::endl;
+    std::cout << "4. Exibir Estatísticas (Contadores)" << std::endl; 
+    std::cout << "5. Gerenciar Entregas" << std::endl;       
     std::cout << "0. Sair" << std::endl;
     std::cin >> op;
     std::cin.ignore(); // Limpa o buffer do cin para evitar problemas com getline
     system("cls"); // Limpa a tela do console
-    if (op < 0 || op > 4) 
+    if (op < 0 || op > 5) 
         std::cout << "Opção inválida. Tente novamente." << std::endl;
     switch (op) {
         case 1:
@@ -194,8 +195,16 @@ int main() {
                         system("cls"); // Limpa a tela do console
                 }
             } while (pedidoOp != 0);
-            break;
+            break;    
         case 4:
+        {
+            exibirEstatisticas(repo);
+            // Pausa para o usuário poder ler as estatísticas
+            std::cout << "\nPressione Enter para continuar...";
+            std::cin.get(); 
+            break;
+        }       
+        case 5:
             do {
                 std::cout << "Opções Gerenciar Entregas." << std::endl;
                 std::cout << "1. Listar Pedidos Pendentes" << std::endl;
@@ -249,7 +258,3 @@ int main() {
     // Salva o estado do repositório antes de sair
     salvarDB(repo);
 }
-    
-
-
-
