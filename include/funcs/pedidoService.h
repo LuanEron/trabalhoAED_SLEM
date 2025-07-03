@@ -2,35 +2,20 @@
 #define FUNC_pedidoService_H
 
 #include <iostream>
-#include <vector>
 #include "classes/Endereco.h"
 #include "classes/Local.h"
 #include "classes/Veiculo.h"
 #include "funcs/localService.h"
 #include "database/repositorio.h" 
 
-/**
- * @class PedidoService
- * @brief Classe responsável por gerenciar as operações CRUD para pedidos.
- * * Esta classe fornece métodos para criar, ler, atualizar e deletar pedidos,
- * utilizando o repositório de dados.
- */
 class PedidoService {
     private:
-        Repositorio* repositorio; // Ponteiro para o repositório onde os pedidos são armazenados
+        Repositorio* repositorio;
     public:
-        PedidoService() = default; // Construtor padrão
-        PedidoService(Repositorio* repo) : repositorio(repo) {} // Construtor que recebe um repositório
+        PedidoService() = default;
+        PedidoService(Repositorio* repo) : repositorio(repo) {}
         
         // ================== CRUD PARA PEDIDOS ==================
-        /**
-         * @brief Cria um novo pedido com os dados fornecidos.
-         * * @param origem Local de origem do pedido.
-         * @param destino Local de destino do pedido.
-         * @param peso Peso do pedido em quilogramas.
-         * @param status Status do pedido (false = pendente, true = concluído).
-         * @return int ID do pedido criado, ou -1 se o peso for inválido.
-         */
         int criarPedido(const Local& origem, const Local& destino, float peso, bool status) {
             Pedido novo(origem, destino, peso, status);
             if(!novo.setOrigem(origem)) return -1;
@@ -40,23 +25,10 @@ class PedidoService {
             return repositorio->addPedido(novo);
         }
 
-        /**
-         * @brief Lê um pedido pelo ID.
-         * * @param id ID do pedido a ser lido.
-         * @return Pedido* Ponteiro para o objeto Pedido, ou nullptr se não encontrado.
-         */
         Pedido* lerPedido(int id) {
             return repositorio->getPedido(id);
         }
 
-        /**
-         * @brief Atualiza um pedido existente com os novos dados fornecidos.
-         * * @param id ID do pedido a ser atualizado.
-         * @param origem Novo local de origem do pedido.
-         * @param destino Novo local de destino do pedido.
-         * @param peso Novo peso do pedido em quilogramas.
-         * @return true se a atualização for bem-sucedida, false caso contrário.
-         */
         bool atualizarPedido(const int id, const Local& origem, const Local& destino, float peso) {
             Pedido* pedido = repositorio->getPedido(id);
             if (!pedido) return false; // Pedido não encontrado
@@ -68,11 +40,6 @@ class PedidoService {
             return true;
         }
 
-        /**
-         * @brief Deleta um pedido pelo ID.
-         * * @param id ID do pedido a ser deletado.
-         * @return true se a deleção for bem-sucedida, false caso contrário.
-         */
         bool deletarPedido(int id) {
             try {
                 repositorio->removePedido(id);
@@ -84,14 +51,8 @@ class PedidoService {
         }
 };
 
-/**
- * @brief Função para adicionar um novo pedido ao repositório.
- * @param repo Ponteiro para o repositório onde o pedido será adicionado.
- * Esta função solicita ao usuário as informações do pedido, como locais de origem e destino e peso,
- * e utiliza a classe PedidoService para criar o pedido e adicioná-lo ao repositório.
- */
 void adicionarPedido(Repositorio* repo) {
-    PedidoService pedidoService(repo);
+     PedidoService pedidoService(repo);
     Local origem, destino;
     float peso;
 
@@ -134,11 +95,6 @@ void adicionarPedido(Repositorio* repo) {
     }
 }
 
-/**
- * @brief Função para listar todos os pedidos no repositório.
- * @param repo Ponteiro para o repositório de onde os pedidos serão listados.
- * Esta função obtém todos os pedidos do repositório e os exibe no console.
- */
 void listarPedidos(Repositorio* repo) {
     std::cout << "Lista de pedidos:" << std::endl;
     Pedido* pedidos = repo->getAllPedido();
@@ -160,10 +116,6 @@ void listarPedidos(Repositorio* repo) {
     }
 }
 
-/**
- * @brief Função para listar todos os pedidos pendentes no repositório.
- * @param repo Ponteiro para o repositório de onde os pedidos pendentes serão listados.
- */
 void listarPedidosPendentes(Repositorio* repo) {
     std::cout << "Lista de pedidos pendentes:" << std::endl;
     Pedido* pedidos = repo->getAllPedido();
@@ -186,10 +138,6 @@ void listarPedidosPendentes(Repositorio* repo) {
     }
 }
 
-/**
- * @brief Função para listar todos os pedidos entregues no repositório.
- * @param repo Ponteiro para o repositório de onde os pedidos entregues serão listados.
- */
 void listarPedidosEntregues(Repositorio* repo) {
     std::cout << "Lista de pedidos entregues:" << std::endl;
     Pedido* pedidos = repo->getAllPedido();
@@ -212,12 +160,6 @@ void listarPedidosEntregues(Repositorio* repo) {
     }
 }   
 
-/**
- * @brief Função para editar um pedido existente no repositório.
- * @param repo Ponteiro para o repositório onde o pedido será editado.
- * Esta função solicita ao usuário o ID do pedido a ser editado e as novas informações do pedido,
- * e utiliza a classe PedidoService para atualizar o pedido no repositório.
- */
 void editarPedido(Repositorio* repo) {
     PedidoService pedidoService(repo);
     int id;
@@ -267,12 +209,6 @@ void editarPedido(Repositorio* repo) {
     }
 }
 
-/**
- * @brief Função para remover um pedido do repositório.
- * @param repo Ponteiro para o repositório de onde o pedido será removido. 
- * Esta função solicita ao usuário o ID do pedido a ser removido
- * e utiliza a classe PedidoService para deletar o pedido do repositório.
- */
 void removerPedido(Repositorio* repo) {
     PedidoService pedidoService(repo);
     int id;
