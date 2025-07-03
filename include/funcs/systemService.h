@@ -6,7 +6,8 @@
 #include "classes/Veiculo.h"
 #include "classes/Pedido.h"
 #include "database/repositorio.h"
-#include <vector>
+#include "funcs/veiculoService.h"
+#include "funcs/pedidoService.h"
 #include <string>
 #include <fstream>
 #include <cmath>
@@ -28,7 +29,11 @@ void salvarDB(Repositorio& repo) {
  * Ela deve ser chamada no início do programa para garantir que os dados persistam entre as execuções.
  */
 void carregarDB(Repositorio& repo) {
-    repo.carregarBinario("include/database/database.bin");
+    try {
+        repo.carregarBinario("include/database/database.bin");
+    } catch(const std::runtime_error& e) {
+        // Se o arquivo não existe ou está vazio, apenas inicia o programa com o repositório em branco.
+    }
 }
 
 /**
@@ -38,8 +43,6 @@ void carregarDB(Repositorio& repo) {
  * @return double Distância entre os dois locais.
  */
 double calcularDistancia(const Local& l1, const Local& l2) {
-    // Implementa a lógica de cálculo de distância entre dois locais
-    // Exemplo: usando a fórmula da distância euclidiana
     double distancia = sqrt(pow(l2.getCoordenadaX() - l1.getCoordenadaX(), 2) +
                             pow(l2.getCoordenadaY() - l1.getCoordenadaY(), 2));
     return distancia;
@@ -51,7 +54,7 @@ double calcularDistancia(const Local& l1, const Local& l2) {
  * @param origem Local de origem do pedido.
  * @return Veiculo* Ponteiro para o veículo selecionado ou nullptr se nenhum disponível.
  */
-Veiculo * selecionarVeiculo(Repositorio& repo, const Local& origem) {
+Veiculo* selecionarVeiculo(Repositorio& repo, const Local& origem) {
     Veiculo* veiculos = repo.getAllVeiculo();
     int numVeiculos = repo.getNumVeiculos();
     int indiceVeiculoSelecionado = -1;
@@ -60,10 +63,6 @@ Veiculo * selecionarVeiculo(Repositorio& repo, const Local& origem) {
     for (int i = 0; i < numVeiculos; ++i) {
         if (veiculos[i].getStatus()) { // Verifica se o veículo está disponível
             double distancia = calcularDistancia(origem, veiculos[i].getLocal());
-            if (distancia == 0) {
-                indiceVeiculoSelecionado = i;
-                break; // Não precisa procurar mais, já encontrou o veículo mais próximo
-            }
             if (distancia < menorDistancia) {
                 menorDistancia = distancia;
                 indiceVeiculoSelecionado = i;
@@ -102,7 +101,7 @@ double calcularRota(const Veiculo& veiculoSelecionado, const Pedido& pedido) {
  * @param veiculo Referência para o veículo que realizou a entrega.
  */
 void finalizarPedido(Repositorio& repo, Pedido& pedido, Veiculo& veiculo) {
-    veiculo.setStatus(true);// Marca o veículo como disponível
+    veiculo.setStatus(true); // Marca o veículo como disponível
     veiculo.setLocal(pedido.getDestino()); // Atualiza a localização do veículo para o destino do pedido
     pedido.setStatus(true); // Marca o pedido como concluído
     repo.updatePedido(pedido);
@@ -116,32 +115,28 @@ void finalizarPedido(Repositorio& repo, Pedido& pedido, Veiculo& veiculo) {
  */
 void realizarEntrega(Repositorio& repo, Pedido& pedido) {
     Veiculo* pVeiculoSelecionado = selecionarVeiculo(repo, pedido.getOrigem());
-
+    
     if (!pVeiculoSelecionado) {
-        // A mensagem de erro já é exibida em selecionarVeiculo
+        // Mensagem de erro já é exibida em selecionarVeiculo
         return;
     }
 
-    // O ponteiro é dereferenciado para uma cópia para exibição e cálculos seguros.
-    Veiculo veiculoCopia = *pVeiculoSelecionado;
-    double distanciaTotal = calcularRota(veiculoCopia, pedido);
-
-    std::cout << "Veículo selecionado: " << veiculoCopia.getModelo() 
-              << " (Placa: " << veiculoCopia.getPlaca() << ")" << std::endl;
+    double distanciaTotal = calcularRota(*pVeiculoSelecionado, pedido);
+    std::cout << "Veículo selecionado: " << pVeiculoSelecionado->getModelo() 
+              << " (Placa: " << pVeiculoSelecionado->getPlaca() << ")" << std::endl;
     std::cout << "ID do pedido: " << pedido.getId() << std::endl;
     std::cout << "Detalhes do pedido:" << std::endl;
     std::cout << "Origem: " << pedido.getOrigem().getEndereco().getRua() 
               << ", Destino: " << pedido.getDestino().getEndereco().getRua() << std::endl;
     std::cout << "Peso do pedido: " << pedido.getPeso() << " Kg" << std::endl;
     std::cout << "Distância do veículo até a origem: " 
-              << calcularDistancia(veiculoCopia.getLocal(), pedido.getOrigem()) << " Km" << std::endl;
+              << calcularDistancia(pVeiculoSelecionado->getLocal(), pedido.getOrigem()) << " Km" << std::endl;
     std::cout << "Distância da origem até o destino: " 
               << calcularDistancia(pedido.getOrigem(), pedido.getDestino()) << " Km" << std::endl;
     std::cout << "Distância total da rota: " << distanciaTotal << " Km" << std::endl;
 
     // Simula a entrega
     std::cout << "Entregando o pedido..." << std::endl;
-    // A função finalizarPedido modifica o veículo original, então passamos o ponteiro dereferenciado.
     finalizarPedido(repo, pedido, *pVeiculoSelecionado);
     std::cout << "Pedido entregue com sucesso!" << std::endl;
 }
