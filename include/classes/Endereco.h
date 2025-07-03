@@ -1,101 +1,391 @@
-#ifndef ENDERECO_H
-#define ENDERECO_H
+#ifndef REPOSITORIO_H
+#define REPOSITORIO_H
 
-#include <iostream>
-#include <vector>
-#include <cstring>
+#pragma once
+#include "classes/Local.h"
+#include "classes/Veiculo.h"
+#include "classes/Pedido.h"
+#include <string>
+#include <fstream>
+#include <stdexcept>
 
 /**
- * @class Endereco
- * @brief Representa um endereço com informações como rua, cidade e estado.
+ * @class Repositorio
+ * @brief Classe responsável por gerenciar os dados do sistema, incluindo locais, veículos e pedidos.
+ * * Esta classe fornece métodos para adicionar, atualizar, remover e consultar locais, veículos e pedidos.
+ * Os dados são armazenados em arrays e podem ser salvos e carregados de um arquivo binário.
  */
-class Endereco {
-    private:
-        char rua[50];       // Rua do endereço  
-        char cidade[50];    // Cidade do endereço
-        char estado[3];     // Estado do endereço (2 letras + terminador nulo)
-    public:
-        /**
-         * @brief Construtor padrão.
-         * Inicializa os atributos com strings vazias.
-         */
-        Endereco() = default; // Construtor padrão
+class Repositorio {
+private:
+    /**
+     * @brief Define a capacidade máxima de armazenamento para cada tipo de entidade.
+     */
+    static const int MAX_ENTIDADES = 100;
 
-        /**
-         * @brief Construtor parametrizado.
-         * @param rua Rua do endereço.
-         * @param cidade Cidade do endereço.
-         * @param estado Estado do endereço (2 letras).
-         */
-        Endereco(const char* rua, const char* cidade, const char* estado) {
-            strncpy(this->rua, rua, sizeof(this->rua) - 1);
-            this->rua[sizeof(this->rua) - 1] = '\0';
-            strncpy(this->cidade, cidade, sizeof(this->cidade) - 1);
-            this->cidade[sizeof(this->cidade) - 1] = '\0';
-            strncpy(this->estado, estado, sizeof(this->estado) - 1);
-            this->estado[sizeof(this->estado) - 1] = '\0';
+    // Arrays para armazenar os dados
+    Local locais[MAX_ENTIDADES];
+    Veiculo veiculos[MAX_ENTIDADES];
+    Pedido pedidos[MAX_ENTIDADES];
+
+    /**
+     * @brief Contador para o número atual de locais armazenados.
+     */
+    int numLocais;
+    /**
+     * @brief Contador para o número atual de veículos armazenados.
+     */
+    int numVeiculos;
+    /**
+     * @brief Contador para o número atual de pedidos armazenados.
+     */
+    int numPedidos;
+
+    // Contadores para IDs únicos
+    int nextLocalId;
+    int nextVeiculoId;
+    int nextPedidoId;
+
+public:
+    /**
+     * @brief Construtor padrão da classe Repositorio.
+     * @details Inicializa os contadores de entidades e IDs como 0.
+     */
+    Repositorio() : numLocais(0), numVeiculos(0), numPedidos(0), nextLocalId(0), nextVeiculoId(0), nextPedidoId(0) {}
+
+    // Locais
+    /**
+     * @brief Gera o próximo ID único para um local.
+     * * @return int Próximo ID único para um local.
+     */
+    int gerarProximoIdLocal() {
+        return nextLocalId++;
+    }
+
+    /**
+     * @brief Adiciona um novo local ao repositório.
+     * * @param l Objeto Local a ser adicionado.
+     * @return int ID do local adicionado, ou -1 se o repositório estiver cheio.
+     */
+    int addLocal(Local l) { 
+        if (numLocais >= MAX_ENTIDADES) {
+            return -1; // Repositório cheio
         }
+        l.setId(gerarProximoIdLocal()); 
+        locais[numLocais++] = l; 
+        return l.getId();
+    }
+    
+    /**
+     * @brief Obtém um local pelo ID.
+     * * @param id ID do local a ser obtido.
+     * @return Local* Ponteiro para o objeto Local, ou nullptr se não encontrado.
+     */
+    Local* getLocal(int id) {
+        for (int i = 0; i < numLocais; ++i) {
+            if (locais[i].getId() == id) {
+                return &locais[i];
+            }
+        }
+        return nullptr;
+    }
 
-        /**
-         * @brief Obtém os atributos do endereço.
-         * @return Referência para o objeto Endereco.
-         */
-        const char* getRua() const { return rua; }
-
-        /**
-         * @brief Obtém os atributos do endereço.
-         * @return Referência para o objeto Endereco.
-         */
-        const char* getCidade() const { return cidade; }
-
-        /**
-         * @brief Obtém os atributos do endereço.
-         * @return Referência para o objeto Endereco.
-         */
-        const char* getEstado() const { return estado; }
-
-        /**
-         * @brief Define a rua do endereço.
-         * @param rua Nova rua a ser atribuída ao endereço.
-         */
-        void setRua (const char* rua) {
-            if (rua == nullptr) {
-                std::cerr << "Rua não pode ser nula." << std::endl;
+    /**
+     * @brief Atualiza um local existente no repositório.
+     * * @param elemento Objeto Local com os dados atualizados.
+     * @throws std::runtime_error Se o local não for encontrado.
+     */
+    void updateLocal(const Local& elemento) {
+        for (int i = 0; i < numLocais; ++i) {
+            if (locais[i].getId() == elemento.getId()) {
+                locais[i] = elemento;
                 return;
             }
-            strncpy(this->rua, rua, sizeof(this->rua) - 1);
-            this->rua[sizeof(this->rua) - 1] = '\0';
+        }
+        throw std::runtime_error("Local não encontrado");
+    }
+
+    /**
+     * @brief Remove um local do repositório pelo ID.
+     * * @param id ID do local a ser removido.
+     * @throws std::runtime_error Se o local não for encontrado.
+     */
+    void removeLocal(int id)  {
+        for (int i = 0; i < numLocais; ++i) {
+            if (locais[i].getId() == id) {
+                // Desloca os elementos para preencher o espaço
+                for (int j = i; j < numLocais - 1; ++j) {
+                    locais[j] = locais[j + 1];
+                }
+                numLocais--;
+                return;
+            }
+        }
+        throw std::runtime_error("Local não encontrado");
+    }
+
+    /**
+     * @brief Obtém um ponteiro para o array de todos os locais.
+     * * @return Local* Ponteiro para o início do array de locais.
+     */
+    Local* getAllLocal() {
+        return locais;
+    }
+
+    /**
+     * @brief Obtém o número total de locais cadastrados.
+     * * @return int O número de locais.
+     */
+    int getNumLocais() const {
+        return numLocais;
+    }
+
+    // Veículos
+    /**
+     * @brief Gera o próximo ID único para um veículo.
+     * * @return int Próximo ID único para um veículo.
+     */
+    int gerarProximoIdVeiculo() {
+        return nextVeiculoId++;
+    }
+
+    /**
+     * @brief Adiciona um novo veículo ao repositório.
+     * * @param v Objeto Veiculo a ser adicionado.
+     * @return int ID do veículo adicionado, ou -1 se o repositório estiver cheio.
+     */
+    int addVeiculo(Veiculo v) { 
+        if (numVeiculos >= MAX_ENTIDADES) {
+            return -1; // Repositório cheio
+        }
+        v.setId(gerarProximoIdVeiculo()); 
+        veiculos[numVeiculos++] = v;
+        return v.getId();
+    }
+    
+     /**
+      * @brief Obtém um veículo pela placa.
+      * * @param placa Placa do veículo a ser obtido.
+      * @return Veiculo* Ponteiro para o objeto Veiculo, ou nullptr se não encontrado.
+      */
+    Veiculo* getVeiculo(const char* placa) { 
+        for (int i = 0; i < numVeiculos; ++i) {
+            if (strcmp(veiculos[i].getPlaca(), placa) == 0) {
+                return &veiculos[i];
+            }
+        }
+        return nullptr;
+     }
+
+    /** * @brief Atualiza um veículo existente no repositório.
+     * * @param elemento Objeto Veiculo com os dados atualizados.
+     * @throws std::runtime_error Se o veículo não for encontrado.
+     */
+    void updateVeiculo(const Veiculo& elemento) {
+        for (int i = 0; i < numVeiculos; ++i) {
+            if (strcmp(veiculos[i].getPlaca(), elemento.getPlaca()) == 0) {
+                veiculos[i] = elemento;
+                return;
+            }
+        }
+        throw std::runtime_error("Veículo não encontrado");
+    }
+
+    /**
+     * @brief Remove um veículo do repositório pela placa.
+     * * @param placa Placa do veículo a ser removido.
+     * @throws std::runtime_error Se o veículo não for encontrado.
+     */
+    void removeVeiculo(const char* placa) {
+        for (int i = 0; i < numVeiculos; ++i) {
+            if (strcmp(veiculos[i].getPlaca(), placa) == 0) {
+                for (int j = i; j < numVeiculos - 1; ++j) {
+                    veiculos[j] = veiculos[j + 1];
+                }
+                numVeiculos--;
+                return;
+            }
+        }
+        throw std::runtime_error("Veículo não encontrado");
+    }
+
+    /**
+     * @brief Obtém um ponteiro para o array de todos os veículos.
+     * * @return Veiculo* Ponteiro para o início do array de veículos.
+     */
+    Veiculo* getAllVeiculo() {
+        return veiculos;
+    }
+    
+    /**
+     * @brief Obtém o número total de veículos cadastrados.
+     * * @return int O número de veículos.
+     */
+    int getNumVeiculos() const {
+        return numVeiculos;
+    }
+
+    // Pedidos
+    /**
+     * @brief Gera o próximo ID único para um pedido.
+     * @return int Próximo ID único para um pedido.
+     */
+    int gerarProximoIdPedido() {
+        return nextPedidoId++;
+    }
+
+    /**
+     * @brief Adiciona um novo pedido ao repositório.
+     * * @param p Objeto Pedido a ser adicionado.
+     * @return int ID do pedido adicionado, ou -1 se o repositório estiver cheio.
+     */
+    int addPedido(Pedido p) { 
+        if (numPedidos >= MAX_ENTIDADES) {
+            return -1; // Repositório cheio
+        }
+        p.setId(gerarProximoIdPedido()); 
+        pedidos[numPedidos++] = p;
+        return p.getId();
+    }
+    
+    /**
+     * @brief Obtém um pedido pelo ID.
+     * * @param id ID do pedido a ser obtido.
+     * @return Pedido* Ponteiro para o objeto Pedido, ou nullptr se não encontrado.
+     */
+    Pedido* getPedido(int id) { 
+        for (int i = 0; i < numPedidos; ++i) {
+            if (pedidos[i].getId() == id) {
+                return &pedidos[i];
+            }
+        }
+        return nullptr;
+    }
+
+    /**
+     * @brief Atualiza um pedido existente no repositório.
+     * * @param elemento Objeto Pedido com os dados atualizados.
+     * @throws std::runtime_error Se o pedido não for encontrado.
+     */
+    void updatePedido(const Pedido& elemento) {
+        for (int i = 0; i < numPedidos; ++i) {
+            if (pedidos[i].getId() == elemento.getId()) {
+                pedidos[i] = elemento;
+                return;
+            }
+        }
+        throw std::runtime_error("Pedido não encontrado");
+    }
+
+    /**
+     * @brief Remove um pedido do repositório pelo ID.
+     * * @param id ID do pedido a ser removido.
+     * @throws std::runtime_error Se o pedido não for encontrado.
+     */
+    void removePedido(int id) {
+        for (int i = 0; i < numPedidos; ++i) {
+            if (pedidos[i].getId() == id) {
+                for (int j = i; j < numPedidos - 1; ++j) {
+                    pedidos[j] = pedidos[j + 1];
+                }
+                numPedidos--;
+                return;
+            }
+        }
+        throw std::runtime_error("Pedido não encontrado");
+    }
+
+    /**
+     * @brief Obtém um ponteiro para o array de todos os pedidos.
+     * * @return Pedido* Ponteiro para o início do array de pedidos.
+     */
+    Pedido* getAllPedido() {
+        return pedidos;
+    }
+
+    /**
+     * @brief Obtém o número total de pedidos cadastrados.
+     * * @return int O número de pedidos.
+     */
+    int getNumPedidos() const {
+        return numPedidos;
+    }
+    
+    /**
+     * @brief Salva os dados do repositório em um arquivo binário.
+     * * @param DB_PATH Caminho do arquivo onde os dados serão salvos.
+     * @details Esta função salva todos os dados do repositório, incluindo locais, veículos e pedidos,
+     * em um arquivo binário especificado pelo caminho DB_PATH.
+     * @throws std::runtime_error Se houver um erro ao abrir o arquivo para escrita.
+     */
+    void salvarBinario(const char* DB_PATH) {
+        std::ofstream outFile(DB_PATH, std::ios::binary);
+        if (!outFile) {
+            throw std::runtime_error("Erro ao abrir o arquivo para escrita");
         }
 
-        /**
-         * @brief Define a cidade do endereço.
-         * @param cidade Nova cidade a ser atribuída ao endereço.
-         */
-        void setCidade(const char* cidade) {
-            if (cidade == nullptr) {
-                std::cerr << "Cidade não pode ser nula." << std::endl;
-                return;
-            }
-            strncpy(this->cidade, cidade, sizeof(this->cidade) - 1);
-            this->cidade[sizeof(this->cidade) - 1] = '\0';
+        outFile.write(reinterpret_cast<const char*>(&numLocais), sizeof(numLocais));
+        for (int i = 0; i < numLocais; ++i) {
+            outFile.write(reinterpret_cast<const char*>(&locais[i]), sizeof(Local));
         }
 
-        /**
-         * @brief Define o estado do endereço.
-         * @param estado Novo estado a ser atribuído ao endereço (2 letras).
-         */
-        void setEstado(const char* estado) {
-            if (estado == nullptr) {
-                std::cerr << "Estado não pode ser nulo." << std::endl;
-                return;
-            }
-            if(estado[0] == '\0' || estado[1] == '\0') {
-                std::cerr << "Estado deve ter 2 letras." << std::endl;
-                return;
-            }
-            strncpy(this->estado, estado, sizeof(this->estado) - 1);
-            this->estado[sizeof(this->estado) - 1] = '\0';
+        outFile.write(reinterpret_cast<const char*>(&numVeiculos), sizeof(numVeiculos));
+        for (int i = 0; i < numVeiculos; ++i) {
+            outFile.write(reinterpret_cast<const char*>(&veiculos[i]), sizeof(Veiculo));
         }
+
+        outFile.write(reinterpret_cast<const char*>(&numPedidos), sizeof(numPedidos));
+        for (int i = 0; i < numPedidos; ++i) {
+            outFile.write(reinterpret_cast<const char*>(&pedidos[i]), sizeof(Pedido));
+        }
+
+        outFile.close();
+    }
+
+    /**
+     * @brief Carrega os dados do repositório a partir de um arquivo binário.
+     * * @param DB_PATH Caminho do arquivo de onde os dados serão carregados.
+     * @details Esta função lê os dados do repositório a partir de um arquivo binário,
+     * restaurando o estado dos locais, veículos e pedidos.
+     * @throws std::runtime_error Se houver um erro ao abrir o arquivo ou se os dados estiverem corrompidos.
+     */
+    void carregarBinario(const char* DB_PATH) {
+        std::ifstream inFile(DB_PATH, std::ios::binary);
+        if (!inFile) {
+            return; // Se o arquivo não existe, inicia o programa com o repositório vazio.
+        }
+
+        // Carrega locais
+        inFile.read(reinterpret_cast<char*>(&numLocais), sizeof(numLocais));
+        if (numLocais < 0 || numLocais > MAX_ENTIDADES) return; // Arquivo corrompido ou inválido
+        for (int i = 0; i < numLocais; ++i) {
+            inFile.read(reinterpret_cast<char*>(&locais[i]), sizeof(Local));
+        }
+        int maxLocalId = 0;
+        for(int i = 0; i < numLocais; ++i) if(locais[i].getId() > maxLocalId) maxLocalId = locais[i].getId();
+        nextLocalId = (numLocais > 0) ? maxLocalId + 1 : 0;
+
+        // Carrega veículos
+        inFile.read(reinterpret_cast<char*>(&numVeiculos), sizeof(numVeiculos));
+        if (numVeiculos < 0 || numVeiculos > MAX_ENTIDADES) return; // Arquivo corrompido ou inválido
+        for (int i = 0; i < numVeiculos; ++i) {
+            inFile.read(reinterpret_cast<char*>(&veiculos[i]), sizeof(Veiculo));
+        }
+        int maxVeiculoId = 0;
+        for(int i = 0; i < numVeiculos; ++i) if(veiculos[i].getId() > maxVeiculoId) maxVeiculoId = veiculos[i].getId();
+        nextVeiculoId = (numVeiculos > 0) ? maxVeiculoId + 1 : 0;
+
+        // Carrega pedidos
+        inFile.read(reinterpret_cast<char*>(&numPedidos), sizeof(numPedidos));
+        if (numPedidos < 0 || numPedidos > MAX_ENTIDADES) return; // Arquivo corrompido ou inválido
+        for (int i = 0; i < numPedidos; ++i) {
+            inFile.read(reinterpret_cast<char*>(&pedidos[i]), sizeof(Pedido));
+        }
+        int maxPedidoId = 0;
+        for(int i = 0; i < numPedidos; ++i) if(pedidos[i].getId() > maxPedidoId) maxPedidoId = pedidos[i].getId();
+        nextPedidoId = (numPedidos > 0) ? maxPedidoId + 1 : 0;
+
+        inFile.close();
+    }
 };
 
-#endif // ENDERECO_H
+#endif // REPOSITORIO_H
