@@ -12,9 +12,8 @@
 /**
  * @class VeiculoService
  * @brief Classe responsável por gerenciar as operações CRUD para veículos.
- * 
- * Esta classe fornece métodos para criar, ler, atualizar e deletar veículos,
- * além de listar todos os veículos disponíveis no repositório.
+ * * Esta classe fornece métodos para criar, ler, atualizar e deletar veículos,
+ * utilizando o repositório de dados.
  */
 class VeiculoService {
     private:
@@ -26,8 +25,7 @@ class VeiculoService {
         // ================== CRUD PARA VEÍCULOS ==================
         /**
          * @brief Cria um novo veículo com a placa, modelo, local e status fornecidos.
-         * 
-         * @param placa Placa do veículo a ser criado.
+         * * @param placa Placa do veículo a ser criado.
          * @param modelo Modelo do veículo a ser criado.
          * @param local Local onde o veículo está estacionado.
          * @param status Status do veículo (true = disponível, false = indisponível).
@@ -36,7 +34,7 @@ class VeiculoService {
         int criarVeiculo(const char* placa, const char* modelo, const Local& local, bool status) {
             Veiculo novo(placa, modelo, local, status);
             if(!novo.setPlaca(placa)) return -1; // Retorna -1 se a placa for inválida
-            if(!novo.setModelo(modelo)) return -1; // Retorna -1 se
+            if(!novo.setModelo(modelo)) return -1;
             if(!novo.setLocal(local)) return -1; // Retorna -1 se o local for inválido
             novo.setStatus(true); // Define o status como true por padrão
             return repositorio->addVeiculo(novo);
@@ -44,8 +42,7 @@ class VeiculoService {
 
         /**
          * @brief Lê um veículo pelo placa.
-         * 
-         * @param placa Placa do veículo a ser lido
+         * * @param placa Placa do veículo a ser lido
          * @return Veiculo* Ponteiro para o objeto Veiculo, ou nullptr se não encontrado.
          */
         Veiculo* lerVeiculo(const char* placa) {
@@ -54,8 +51,7 @@ class VeiculoService {
 
         /**
          * @brief Atualiza um veículo existente com os novos dados fornecidos.
-         * 
-         * @param placa Placa do veículo a ser atualizado.
+         * * @param placa Placa do veículo a ser atualizado.
          * @param modelo Novo modelo do veículo.
          * @param local Novo local onde o veículo está estacionado.
          * @param status Novo status do veículo (true = disponível, false = indisponível).
@@ -74,8 +70,7 @@ class VeiculoService {
 
         /**
          * @brief Deleta um veículo pelo placa.
-         * 
-         * @param placa Placa do veículo a ser deletado.
+         * * @param placa Placa do veículo a ser deletado.
          * @return true se a deleção for bem-sucedida, false caso contrário.
          */
         bool deletarVeiculo(const char* placa) {
@@ -87,73 +82,69 @@ class VeiculoService {
                 return false;
             }
         }
-
-        /**
-         * @brief Lista todos os veículos disponíveis no repositório.
-         * 
-         * @return std::vector<Veiculo> Vetor contendo todos os veículos.
-         */
-        std::vector<Veiculo> listarVeiculos() {
-            return repositorio->getAllVeiculo();
-        }
 };
 
 /**
  * @brief Função para adicionar um novo veículo ao repositório.
  * @param repo Ponteiro para o repositório onde o veículo será adicionado.
- * Esta função solicita ao usuário as informações do veículo, como placa, modelo, local e status,
+ * Esta função solicita ao usuário as informações do veículo, como placa, modelo e local,
  * e utiliza a classe VeiculoService para criar o veículo e adicioná-lo ao repositório.
  */
 void adicionarVeiculo(Repositorio* repo) {
     VeiculoService veiculoService(repo);
     char placa[8], modelo[50];
     Local local;
-    bool status;
     int localId;
 
-    std::cout << "Digite a placa do veículo (formato AAA0000): ";
+    std::cout << "Digite a placa do veículo (formato AAA1234): ";
     std::cin >> placa;
-    std::cin.ignore(); // Limpa o buffer do cin para evitar problemas com getline
+    std::cin.ignore(); 
     std::cout << "Digite o modelo do veículo: ";
     std::cin.getline(modelo, 50);
 
-    // associa a um local salvo
     listarLocais(repo);
     std::cout << "Digite o ID do local onde o veículo está estacionado: ";
     std::cin >> localId;
-    local = *repo->getLocal(localId);
-    
+    Local* pLocal = repo->getLocal(localId);
+    if (!pLocal) {
+        std::cerr << "Erro: Local com ID " << localId << " não encontrado." << std::endl;
+        return;
+    }
+    local = *pLocal;
 
-    status = true; // Defina o status como true por padrão
-
-    int id = veiculoService.criarVeiculo(placa, modelo, local, status);
+    int id = veiculoService.criarVeiculo(placa, modelo, local, true);
     if (id != -1) {
         std::cout << "Veículo adicionado com sucesso! ID: " << id << std::endl;
     } else {
-        std::cerr << "Erro ao adicionar veículo." << std::endl;
+        std::cerr << "Erro ao adicionar veículo. Verifique a placa e os dados." << std::endl;
     }
 }
 
 /**
  * @brief Função para listar todos os veículos no repositório.
  * @param repo Ponteiro para o repositório de onde os veículos serão listados.
- * Esta função utiliza a classe VeiculoService para obter todos os veículos e exibi-los no console.
+ * Esta função obtém todos os veículos do repositório e os exibe no console.
  */
 void listarVeiculos(Repositorio* repo) {
-    VeiculoService veiculoService(repo);
     std::cout << "Lista de veículos:" << std::endl;
-    for (const auto& veiculo : veiculoService.listarVeiculos()) {
+    Veiculo* veiculos = repo->getAllVeiculo();
+    int numVeiculos = repo->getNumVeiculos();
+
+    if (numVeiculos == 0) {
+        std::cout << "Nenhum veículo cadastrado." << std::endl;
+        return;
+    }
+
+    for (int i = 0; i < numVeiculos; ++i) {
+        const auto& veiculo = veiculos[i];
         std::cout << "ID: " << veiculo.getId() 
                   << ", Placa: " << veiculo.getPlaca() 
                   << ", Modelo: " << veiculo.getModelo() 
                   << ", Local: " << veiculo.getLocal().getEndereco().getRua() 
-                                 << veiculo.getLocal().getEndereco().getCidade()
-                                 << veiculo.getLocal().getEndereco().getEstado()
-                  << ", Coordenadas: (" << veiculo.getLocal().getCoordenadaX() << veiculo.getLocal().getCoordenadaY()
-                      << ", Status: " << (veiculo.getStatus() ? "Disponivel" : "Indisponivel") 
-                      << std::endl;
-        }
+                  << ", Status: " << (veiculo.getStatus() ? "Disponivel" : "Indisponivel") 
+                  << std::endl;
     }
+}
 
 /**
  * @brief Função para editar um veículo existente no repositório.
@@ -163,12 +154,13 @@ void listarVeiculos(Repositorio* repo) {
  */
 void editarVeiculo(Repositorio* repo) {
     VeiculoService veiculoService(repo);
-    char placa[8], modelo[50];
-    Local local;
-    bool status;
+    char placa[8], novoModelo[50];
+    Local novoLocal;
+    bool novoStatus;
 
     std::cout << "Digite a placa do veículo a ser editado: ";
     std::cin >> placa;
+    std::cin.ignore();
 
     Veiculo* veiculo = veiculoService.lerVeiculo(placa);
     if (!veiculo) {
@@ -177,16 +169,25 @@ void editarVeiculo(Repositorio* repo) {
     }
 
     std::cout << "Digite o novo modelo do veículo: ";
-    std::cin.getline(modelo, 50);
+    std::cin.getline(novoModelo, 50);
 
-    // associa a um local salvo
     listarLocais(repo);
     std::cout << "Digite o ID do novo local onde o veículo está estacionado: ";
     int localId;
+    std::cin >> localId;
+    Local* pLocal = repo->getLocal(localId);
+    if(!pLocal){
+        std::cerr << "Local não encontrado." << std::endl;
+        return;
+    }
+    novoLocal = *pLocal;
 
-    status = true; // Defina o status como true por padrão
+    std::cout << "O veículo está disponível? (1 para Sim, 0 para Não): ";
+    int statusInput;
+    std::cin >> statusInput;
+    novoStatus = (statusInput == 1);
 
-    if (veiculoService.atualizarVeiculo(placa, modelo, local, status)) {
+    if (veiculoService.atualizarVeiculo(placa, novoModelo, novoLocal, novoStatus)) {
         std::cout << "Veículo atualizado com sucesso!" << std::endl;
     } else {
         std::cerr << "Erro ao atualizar veículo." << std::endl;
